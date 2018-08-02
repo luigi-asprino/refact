@@ -21,46 +21,64 @@ import it.cnr.istc.stlab.refact.utils.FileUtils;
 public class DataRefactor {
 
 	private static Logger logger = LoggerFactory.getLogger(Refact.class);
+	private RefactConfiguration conf;
 
-	private String inFile, outFile;
-	private String[] refacotringRules;
-	private String format = "TTL";
-
-	public DataRefactor(String inF, String outF, String[] refacotringRules) {
-		this.inFile = inF;
-		this.outFile = outF;
-		this.refacotringRules = refacotringRules;
-	}
-
-	public void setFormat(String format) {
-		this.format = format;
+	public DataRefactor(RefactConfiguration c) {
+		conf = c;
 	}
 
 	public void refactorize() throws FileNotFoundException {
 
-		Model in = ModelFactory.createDefaultModel();
-		Model out = ModelFactory.createDefaultModel();
-		RDFDataMgr.read(in, inFile);
+		if (conf.getInputType().equals(RefactConfiguration.InputType.SPARQL_ENDPOINT)) {
 
-		for (String step : refacotringRules) {
+			Model out = ModelFactory.createDefaultModel();
 
-			List<String> rules = FileUtils.getFilesUnderTreeRec(step);
+			for (String step : conf.getRefactoringRulesFolders()) {
 
-			for (String r : rules) {
+				List<String> rules = FileUtils.getFilesUnderTreeRec(step);
 
-				if (!FilenameUtils.getExtension(r).equals("sparql"))
-					continue;
+				for (String r : rules) {
 
-				logger.trace("Applaying rule in {}", r);
-				String rule = FileUtils.readFile(r, true);
-				Query query = QueryFactory.create(rule);
-				QueryExecution qexec = QueryExecutionFactory.create(query, in);
-				out.add(qexec.execConstruct());
+					if (!FilenameUtils.getExtension(r).equals("sparql"))
+						continue;
+
+					logger.trace("Applaying rule in {}", r);
+					String rule = FileUtils.readFile(r, true);
+					Query query = QueryFactory.create(rule);
+					QueryExecution qexec = QueryExecutionFactory.sparqlService(conf.getInput(), query);
+					out.add(qexec.execConstruct());
+				}
 			}
-		}
 
-		out.setNsPrefixes(in.getNsPrefixMap());
-		out.write(new FileOutputStream(new File(outFile)), format);
+			out.write(new FileOutputStream(new File(conf.getOutputFile())), conf.getOutputFormat());
+
+		} else {
+
+			Model in = ModelFactory.createDefaultModel();
+			Model out = ModelFactory.createDefaultModel();
+			RDFDataMgr.read(in, conf.getInput());
+
+			for (String step : conf.getRefactoringRulesFolders()) {
+
+				List<String> rules = FileUtils.getFilesUnderTreeRec(step);
+
+				for (String r : rules) {
+
+					if (!FilenameUtils.getExtension(r).equals("sparql"))
+						continue;
+
+					logger.trace("Applaying rule in {}", r);
+					String rule = FileUtils.readFile(r, true);
+					Query query = QueryFactory.create(rule);
+					QueryExecution qexec = QueryExecutionFactory.create(query, in);
+					out.add(qexec.execConstruct());
+				}
+			}
+
+			out.setNsPrefixes(in.getNsPrefixMap());
+			out.write(new FileOutputStream(new File(conf.getOutputFile())), conf.getOutputFormat());
+
+		}
 
 	}
 }
