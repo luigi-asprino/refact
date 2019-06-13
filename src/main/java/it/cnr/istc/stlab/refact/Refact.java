@@ -10,7 +10,7 @@ public class Refact {
 	private static Logger logger = LoggerFactory.getLogger(Refact.class);
 
 	public static void main(String[] args) {
-		
+
 		logger.info("Refact");
 
 		DataRefactor dr = new DataRefactor(RefactConfiguration.getInstance(args[0]));

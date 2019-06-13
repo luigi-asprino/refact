@@ -10,10 +10,10 @@ public class RefactConfiguration {
 	private static String CONFIG_FILE = "config.properties";
 
 	public enum InputType {
-		SPARQL_ENDPOINT, TTL_FILE, NT_FILE
+		SPARQL_ENDPOINT, TTL_FILE, NT_FILE, RDF_XML
 	}
 
-	private String input, outputFile, outputFormat;
+	private String input, outputFile, outputFormat, outputGraph, tmpDir;
 	private String[] refactoringRulesFolders;
 	public InputType inputType;
 
@@ -26,7 +26,9 @@ public class RefactConfiguration {
 			input = config.getString("input");
 			outputFile = config.getString("outputFile");
 			outputFormat = config.getString("outputFormat");
+			outputGraph = config.getString("outputGraph");
 			refactoringRulesFolders = config.getStringArray("ruleFolders");
+			tmpDir = config.getString("tmpDir","tmp");
 
 			String inputT = config.getString("inputType");
 			if (inputT.equalsIgnoreCase("SPARQL")) {
@@ -35,6 +37,8 @@ public class RefactConfiguration {
 				inputType = InputType.TTL_FILE;
 			} else if (inputT.equalsIgnoreCase("NT")) {
 				inputType = InputType.NT_FILE;
+			} else if (inputT.equalsIgnoreCase("RDF/XML")) {
+				inputType = InputType.RDF_XML;
 			}
 
 		} catch (ConfigurationException e) {
@@ -78,6 +82,12 @@ public class RefactConfiguration {
 		return outputFormat;
 	}
 	
-	
+	public String getOutputGraph() {
+		return outputGraph;
+	}
+
+	public String getTmpDir() {
+		return tmpDir;
+	}
 
 }
