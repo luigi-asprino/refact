@@ -18,6 +18,8 @@ import org.apache.jena.tdb.TDBFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.shaded.com.google.common.collect.Sets;
+
 import it.cnr.istc.stlab.refact.utils.FileUtils;
 
 public class DataRefactor {
@@ -40,11 +42,11 @@ public class DataRefactor {
 	}
 
 	private void refactorizeTDB() throws FileNotFoundException {
-		
+
 		logger.info("Refactorize using a TDB");
-		
+
 		new File(conf.getTmpDir() + "/tdb").mkdirs();
-		
+
 		Dataset ds = TDBFactory.createDataset(conf.getTmpDir() + "/tdb");
 
 		if (conf.getInputType().equals(RefactConfiguration.InputType.SPARQL_ENDPOINT)) {
@@ -55,7 +57,8 @@ public class DataRefactor {
 						continue;
 
 					logger.trace("Applaying rule in {}", r);
-					QueryExecution qexec = QueryExecutionFactory.sparqlService(conf.getInput(), QueryFactory.create(FileUtils.readFile(r, true)));
+					QueryExecution qexec = QueryExecutionFactory.sparqlService(conf.getInput(),
+							QueryFactory.create(FileUtils.readFile(r, true)));
 					ds.begin(ReadWrite.WRITE);
 					ds.getNamedModel(conf.getOutputGraph()).add(qexec.execConstruct());
 					ds.commit();
@@ -70,7 +73,8 @@ public class DataRefactor {
 					if (!FilenameUtils.getExtension(r).equals("sparql"))
 						continue;
 					logger.trace("Applaying rule in {}", r);
-					QueryExecution qexec = QueryExecutionFactory.create(QueryFactory.create(FileUtils.readFile(r, true)), model_in);
+					QueryExecution qexec = QueryExecutionFactory
+							.create(QueryFactory.create(FileUtils.readFile(r, true)), model_in);
 					ds.begin(ReadWrite.WRITE);
 					ds.getNamedModel(conf.getOutputGraph()).add(qexec.execConstruct());
 					ds.commit();
@@ -82,16 +86,17 @@ public class DataRefactor {
 
 		logger.info("Dumping the dataset");
 		ds.begin(ReadWrite.READ);
-		RDFDataMgr.write(new FileOutputStream(new File(conf.getOutputFile())), ds, conf.getOutputFormat().equalsIgnoreCase("TRIG")?Lang.TRIG:Lang.NQUADS);
+		RDFDataMgr.write(new FileOutputStream(new File(conf.getOutputFile())), ds,
+				conf.getOutputFormat().equalsIgnoreCase("TRIG") ? Lang.TRIG : Lang.NQUADS);
 		ds.end();
 		logger.info("Output file written!");
-		
+
 	}
 
 	private void refactorizeModel() throws FileNotFoundException {
-		
+
 		logger.info("Refactorize using an in-memory model");
-		
+
 		Model out = ModelFactory.createDefaultModel();
 
 		if (conf.getInputType().equals(RefactConfiguration.InputType.SPARQL_ENDPOINT)) {
@@ -102,19 +107,30 @@ public class DataRefactor {
 						continue;
 
 					logger.trace("Applaying rule in {}", r);
-					QueryExecution qexec = QueryExecutionFactory.sparqlService(conf.getInput(), QueryFactory.create(FileUtils.readFile(r, true)));
+					QueryExecution qexec = QueryExecutionFactory.sparqlService(conf.getInput(),
+							QueryFactory.create(FileUtils.readFile(r, true)));
 					out.add(qexec.execConstruct());
 				}
 			}
 		} else {
 			Model model_in = ModelFactory.createDefaultModel();
-			RDFDataMgr.read(model_in, conf.getInput());
+			File f = new File(conf.getInput());
+			if (f.isDirectory()) {
+				for (String r : FileUtils.getFilesUnderTreeRec(conf.getInput())) {
+					if (FilenameUtils.isExtension(r, Sets.newHashSet("rdf", "ttl", "nt", "owl", "jsonld"))) {
+						RDFDataMgr.read(model_in, r);
+					}
+				}
+			} else {
+				RDFDataMgr.read(model_in, conf.getInput());
+			}
 			for (String step : conf.getRefactoringRulesFolders()) {
 				for (String r : FileUtils.getFilesUnderTreeRec(step)) {
 					if (!FilenameUtils.getExtension(r).equals("sparql"))
 						continue;
 					logger.trace("Applaying rule in {}", r);
-					QueryExecution qexec = QueryExecutionFactory.create(QueryFactory.create(FileUtils.readFile(r, true)), model_in);
+					QueryExecution qexec = QueryExecutionFactory
+							.create(QueryFactory.create(FileUtils.readFile(r, true)), model_in);
 					out.add(qexec.execConstruct());
 				}
 			}
@@ -122,7 +138,11 @@ public class DataRefactor {
 		}
 
 		logger.info("Writing output file");
-		out.write(new FileOutputStream(new File(conf.getOutputFile())), conf.getOutputFormat());
+		if (conf.getOutputFormat() == null) {
+			out.write(new FileOutputStream(new File(conf.getOutputFile())));
+		} else {
+			out.write(new FileOutputStream(new File(conf.getOutputFile())), conf.getOutputFormat());
+		}
 		logger.info("Output file written!");
 	}
 }

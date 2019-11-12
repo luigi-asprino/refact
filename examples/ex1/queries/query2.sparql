@@ -1,0 +1,7 @@
+PREFIX fschema: <https://w3id.org/framester/schema/> 
+PREFIX fn15schema: <https://w3id.org/framester/framenet/tbox/>
+
+CONSTRUCT {?fe fschema:semanticRole ?fe}
+WHERE{
+ ?f fn15schema:hasFrameElement ?fe . 
+}

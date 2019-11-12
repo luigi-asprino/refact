@@ -1,0 +1,9 @@
+PREFIX fschema: <https://w3id.org/framester/schema/>
+PREFIX dbp:   <http://dbpedia.org/property/>
+
+CONSTRUCT {
+  ?dbr fschema:playsRoleIn ?synframe .
+}WHERE {
+  ?synframe fschema:unaryProjection ?wnsyn .
+  ?dbr dbp:wordnet_type ?wnsyn .
+}

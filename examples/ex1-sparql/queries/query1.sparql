@@ -1,8 +1,0 @@
-PREFIX fschema: <https://w3id.org/framester/schema/> 
-PREFIX fn15schema: <https://w3id.org/framester/framenet/tbox/>
-
-
-CONSTRUCT {?f a fschema:ConceptualFrame}
-WHERE{
- ?f a fn15schema:Frame .
-}
